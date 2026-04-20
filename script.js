@@ -411,7 +411,7 @@ function generatePrompt(formState) { return `You are an expert travel consultant
 
 async function getTravelSuggestions(formState) {
   // IMPORTANT: PASTE YOUR GOOGLE AI STUDIO API KEY IN THE LINE BELOW
-  const apiKey = "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";
+  const apiKey = "AIzaSyAI-JLYdLJJnH0ZYcAX32roFDE5s6w54LI";
 
   if (apiKey === "YOUR_API_KEY_HERE" || !apiKey) {
     throw new Error("API Key not found. Please edit script.js and add your key.");
