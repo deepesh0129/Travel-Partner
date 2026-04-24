@@ -406,45 +406,8 @@ function handleTabClick(e) {
 
 
 // --- API SERVICE LOGIC ---
-// --- SAFE JSON PARSER ---
-function safeParseJSON(text) {
-  try {
-    let cleaned = text.replace(/```json|```/gi, '').trim();
-
-    const start = cleaned.indexOf('{');
-    const end = cleaned.lastIndexOf('}');
-    if (start !== -1 && end !== -1) {
-      cleaned = cleaned.substring(start, end + 1);
-    }
-
-    return JSON.parse(cleaned);
-  } catch (err) {
-    console.error("JSON Parse Failed:", err, text);
-    return null;
-  }
-}
-
-// --- DEFAULT FALLBACK ---
-function getDefaultResponse() {
-  return {
-    destinationInfo: {
-      about: "No data available",
-      history: "No data available",
-      localSpecialty: "No data available"
-    },
-    isGoodTimeToVisit: false,
-    reasoning: "Could not generate suggestions. Please try again.",
-    bestTimeToVisit: "",
-    dayByDayPlan: [],
-    placesToVisit: [],
-    foodToTry: [],
-    accommodationSuggestions: []
-  };
-}
-
-// --- GEMINI API FUNCTION ---
 async function getTravelSuggestions(formState) {
-  const apiKey = "AIzaSyCX6EW4CrC-9vqcySuJ7h3-SUKIyIDuAVk"; // 🔑 put your NEW key
+  const apiKey = "AIzaSyCX6EW4CrC-9vqcySuJ7h3-SUKIyIDuAVk";
 
   const API_URL =
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
@@ -460,10 +423,7 @@ async function getTravelSuggestions(formState) {
           }
         ]
       }
-    ],
-    generationConfig: {
-      temperature: 0.7
-    }
+    ]
   };
 
   try {
@@ -475,33 +435,49 @@ async function getTravelSuggestions(formState) {
       body: JSON.stringify(payload)
     });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error("API Error:", errorData);
-      return getDefaultResponse();
-    }
-
     const data = await response.json();
 
-    const text =
-      data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    // 🔍 Debug (check console if issue)
+    console.log("API RESPONSE:", data);
 
-    if (!text) {
-      console.error("Empty API response:", data);
-      return getDefaultResponse();
+    let text =
+      data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+
+    if (!text) throw new Error("Empty response");
+
+    // ✅ Clean response
+    text = text.replace(/```json|```/gi, "").trim();
+
+    // ✅ Extract JSON safely
+    const start = text.indexOf("{");
+    const end = text.lastIndexOf("}");
+
+    if (start === -1 || end === -1) {
+      throw new Error("Invalid JSON format");
     }
 
-    const parsed = safeParseJSON(text);
+    const cleanJSON = text.substring(start, end + 1);
 
-    if (!parsed) {
-      return getDefaultResponse();
-    }
-
-    return parsed;
+    return JSON.parse(cleanJSON);
 
   } catch (error) {
-    console.error("Fetch Error:", error);
-    return getDefaultResponse();
+    console.error("API ERROR:", error);
+
+    // ✅ Always return safe fallback (prevents blank screen)
+    return {
+      destinationInfo: {
+        about: "Unable to load data",
+        history: "",
+        localSpecialty: ""
+      },
+      isGoodTimeToVisit: false,
+      reasoning: "Something went wrong. Try again.",
+      bestTimeToVisit: "",
+      dayByDayPlan: [],
+      placesToVisit: [],
+      foodToTry: [],
+      accommodationSuggestions: []
+    };
   }
 }
 
