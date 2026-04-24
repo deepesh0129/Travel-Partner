@@ -109,7 +109,7 @@ function WelcomeMessageHTML() {
 
 function ClimateAdviceHTML({ isGoodTimeToVisit, reasoning, bestTimeToVisit }) {
     const statusClass = isGoodTimeToVisit ? 'good' : 'bad';
-    const icon = isGoodTimeToVisit ? '' : ' ';
+    const icon = isGoodTimeToVisit ? '' : '�';
     const title = isGoodTimeToVisit ? 'Great Time to Visit!' : 'Consider Your Timing';
     return `
         <div class="climate-advice ${statusClass}">
@@ -134,7 +134,7 @@ function DestinationInfoHTML({ info }) {
                     <p class="card-description">${info.about}</p>
                 </div>
                 <div>
-                    <h3 class="card-title">=  History</h3>
+                    <h3 class="card-title">=� History</h3>
                     <p class="card-description">${info.history}</p>
                 </div>
                 <div>
@@ -201,32 +201,32 @@ function SuggestionCardHTML(item) {
             <p class="card-description">${item.description}</p>
             <div class="card-divider">
                 ${isPlace ? `
-                    ${detailRow({ icon: '< ', label: 'Entry Fee', value: item.entryFee })}
-                    ${detailRow({ icon: ' ', label: 'Hours', value: item.openingHours })}
+                    ${detailRow({ icon: '<�', label: 'Entry Fee', value: item.entryFee })}
+                    ${detailRow({ icon: '�', label: 'Hours', value: item.openingHours })}
                     ${detailRow({ icon: '(', label: 'Best Time', value: item.bestVisitTime })}
-                    ${detailRow({ icon: '= ', label: 'Transport', value: item.modeOfTransport })}
-                    ${detailRow({ icon: ' ', label: 'Petrol', value: item.nearestPetrolStation })}
-                    ${detailRow({ icon: '< ', label: 'Nearby', value: renderList(item.nearbyAttractions) })}
+                    ${detailRow({ icon: '=�', label: 'Transport', value: item.modeOfTransport })}
+                    ${detailRow({ icon: '�', label: 'Petrol', value: item.nearestPetrolStation })}
+                    ${detailRow({ icon: '<�', label: 'Nearby', value: renderList(item.nearbyAttractions) })}
                 ` : ''}
                 ${isFood ? `
-                    ${detailRow({ icon: '= ', label: 'Est. Cost', value: item.estimatedCost })}
+                    ${detailRow({ icon: '=�', label: 'Est. Cost', value: item.estimatedCost })}
                     ${detailRow({ icon: '<6', label: 'Dietary', value: item.dietaryInformation })}
                     ${detailRow({ icon: 'P', label: 'Must Try', value: item.mustTryAt })}
                     ${detailRow({ icon: '=R', label: 'Popular', value: item.popularTimes })}
                     ${detailRow({ icon: '<}', label: 'Serving', value: item.servingSuggestion })}
-                    ${detailRow({ icon: '= ', label: 'Top Spots', value: renderList(item.favoriteSpots) })}
+                    ${detailRow({ icon: '=�', label: 'Top Spots', value: renderList(item.favoriteSpots) })}
                 ` : ''}
                 ${isAccommodation ? `
                     ${item.pricePerNight !== 'N/A' ? detailRow({ icon: '<', label: 'Per Night', value: item.pricePerNight }) : ''}
-                    ${item.packageDetails !== 'N/A' ? detailRow({ icon: '= ', label: 'Packages', value: item.packageDetails }) : ''}
+                    ${item.packageDetails !== 'N/A' ? detailRow({ icon: '=�', label: 'Packages', value: item.packageDetails }) : ''}
                     ${item.hourlyRate !== 'N/A' ? detailRow({ icon: '=R', label: 'Hourly', value: item.hourlyRate }) : ''}
                     ${detailRow({ icon: '=', label: 'Check-in/out', value: item.checkInCheckOutTimes })}
-                    ${detailRow({ icon: '= ', label: 'Amenities', value: renderList(item.amenities) })}
+                    ${detailRow({ icon: '=�', label: 'Amenities', value: renderList(item.amenities) })}
                 ` : ''}
             </div>
             ${item.travelTips && item.travelTips.length > 0 ? `
                 <div class="card-tips">
-                    <h4 class="card-tips-title"><span>= </span> Travel Tips</h4>
+                    <h4 class="card-tips-title"><span>=�</span> Travel Tips</h4>
                     <ul>${item.travelTips.map(tip => `<li>${tip}</li>`).join('')}</ul>
                 </div>
             ` : ''}
@@ -411,12 +411,12 @@ function generatePrompt(formState) { return `You are an expert travel consultant
 
 async function getTravelSuggestions(formState) {
   // IMPORTANT: PASTE YOUR GOOGLE AI STUDIO API KEY IN THE LINE BELOW
-  const apiKey = "AIzaSyCX6EW4CrC-9vqcySuJ7h3-SUKIyIDuAVk";
+  const apiKey = "AIzaSyAZ5LCBVtDZmWp_WQadiXC3pJX4INviimg";
 
   if (apiKey === "YOUR_API_KEY_HERE" || !apiKey) {
     throw new Error("API Key not found. Please edit script.js and add your key.");
   }
-  const API_URL = `const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent`;
+  const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
   const payload = { contents: [{ parts: [{ text: generatePrompt(formState) }] }], generationConfig: { responseMimeType: "application/json", responseSchema: responseSchema } };
 
   try {
@@ -436,3 +436,4 @@ async function getTravelSuggestions(formState) {
 
 // --- INITIAL RENDER ---
 document.addEventListener('DOMContentLoaded', render);
+
