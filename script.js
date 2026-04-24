@@ -416,7 +416,7 @@ async function getTravelSuggestions(formState) {
   if (apiKey === "YOUR_API_KEY_HERE" || !apiKey) {
     throw new Error("API Key not found. Please edit script.js and add your key.");
   }
-  const API_URL = `const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
+  const API_URL = `const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent`;
   const payload = { contents: [{ parts: [{ text: generatePrompt(formState) }] }], generationConfig: { responseMimeType: "application/json", responseSchema: responseSchema } };
 
   try {
