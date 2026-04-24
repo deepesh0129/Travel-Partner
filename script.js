@@ -406,34 +406,102 @@ function handleTabClick(e) {
 
 
 // --- API SERVICE LOGIC ---
-const responseSchema = {"type":"OBJECT","properties":{"destinationInfo":{"type":"OBJECT","properties":{"about":{"type":"STRING"},"history":{"type":"STRING"},"localSpecialty":{"type":"STRING"}}},"isGoodTimeToVisit":{"type":"BOOLEAN"},"reasoning":{"type":"STRING"},"bestTimeToVisit":{"type":"STRING"},"dayByDayPlan":{"type":"ARRAY","items":{"type":"OBJECT","properties":{"day":{"type":"INTEGER"},"title":{"type":"STRING"},"theme":{"type":"STRING"},"schedule":{"type":"ARRAY","items":{"type":"OBJECT","properties":{"time":{"type":"STRING"},"activity":{"type":"STRING"},"description":{"type":"STRING"}}}}}}},"placesToVisit":{"type":"ARRAY","items":{"type":"OBJECT","properties":{"name":{"type":"STRING"},"description":{"type":"STRING"},"type":{"type":"STRING"},"entryFee":{"type":"STRING"},"openingHours":{"type":"STRING"},"bestTimeToVisit":{"type":"STRING"},"modeOfTransport":{"type":"STRING"},"nearestPetrolStation":{"type":"STRING"},"nearbyAttractions":{"type":"ARRAY","items":{"type":"STRING"}},"travelTips":{"type":"ARRAY","items":{"type":"STRING"}}}}},"foodToTry":{"type":"ARRAY","items":{"type":"OBJECT","properties":{"name":{"type":"STRING"},"description":{"type":"STRING"},"estimatedCost":{"type":"STRING"},"favoriteSpots":{"type":"ARRAY","items":{"type":"STRING"}},"dietaryInformation":{"type":"STRING"},"mustTryAt":{"type":"STRING"},"popularTimes":{"type":"STRING"},"servingSuggestion":{"type":"STRING"},"travelTips":{"type":"ARRAY","items":{"type":"STRING"}}}}},"accommodationSuggestions":{"type":"ARRAY","items":{"type":"OBJECT","properties":{"type":{"type":"STRING"},"description":{"type":"STRING"},"pricePerNight":{"type":"STRING"},"packageDetails":{"type":"STRING"},"hourlyRate":{"type":"STRING"},"amenities":{"type":"ARRAY","items":{"type":"STRING"}},"checkInCheckOutTimes":{"type":"STRING"},"travelTips":{"type":"ARRAY","items":{"type":"STRING"}}}}}}};
-function generatePrompt(formState) { return `You are an expert travel consultant AI for destinations within India only. Your task is to generate a personalized and highly detailed travel plan based on the user's preferences. If the user enters a location outside of India, you MUST respond with a JSON where 'reasoning' politely explains this limitation and all other fields, especially arrays, are empty. User Preferences: - Destination: ${formState.destination} - Budget: ${formState.budget} - Travel Month: ${formState.travelMonth} - Trip Duration: ${formState.tripDuration} days. Instructions: 1. First, provide general information about the destination ('destinationInfo'). 2. Analyze the climate and determine if it's a good time to visit. 3. Generate lists of suggestions for 'placesToVisit', 'foodToTry', and 'accommodationSuggestions' based on the detailed instructions below. 4. CRITICAL: After generating the suggestion lists, create a cohesive and logical 'dayByDayPlan' for the exact number of days in 'Trip Duration'. This plan MUST integrate the items from your generated 'placesToVisit' and 'foodToTry' lists. Structure the days logically (e.g., group nearby attractions). 5. The number of suggestions for 'placesToVisit' and 'foodToTry' MUST be based on the trip duration: - 1-3 days: Suggest exactly 3 of each. - 4-6 days: Suggest exactly 5 of each. - 7 or more days: Suggest exactly 7 of each. 6. Provide exactly 3 suggestions for 'accommodationSuggestions', tailored to the user's budget. 7. For 'placesToVisit', include detailed information: 'openingHours', 'bestVisitTime', 'entryFee' in INR, the most recommended 'modeOfTransport', 'nearestPetrolStation', 'nearbyAttractions', and 2-3 actionable 'travelTips'. 8. For 'foodToTry', include 'estimatedCost' in INR, 'favoriteSpots', 'dietaryInformation', a 'mustTryAt' recommendation, 'popularTimes', 'servingSuggestion', and 2-3 actionable 'travelTips'. 9. For 'accommodationSuggestions', provide 'pricePerNight' in INR, 'packageDetails', 'hourlyRate', key 'amenities', 'checkInCheckOutTimes', and 2-3 actionable 'travelTips'. Use "N/A" if not applicable. 10. The budget levels mean: - 'Budget': Free activities, street food, hostels/guesthouses. - 'Mid-Range': Moderately priced attractions, local restaurants, 3-4 star hotels. - 'Luxury': Exclusive experiences, fine dining, 5-star hotels/resorts. 11. Your entire response MUST be in a valid JSON format that adheres to the provided schema. Do not include any text or markdown formatting outside of the JSON structure.`; }
-
-async function getTravelSuggestions(formState) {
-  // IMPORTANT: PASTE YOUR GOOGLE AI STUDIO API KEY IN THE LINE BELOW
-  const apiKey = "AIzaSyCX6EW4CrC-9vqcySuJ7h3-SUKIyIDuAVk";
-
-  if (apiKey === "YOUR_API_KEY_HERE" || !apiKey) {
-    throw new Error("API Key not found. Please edit script.js and add your key.");
-  }
-  const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-  const payload = { contents: [{ parts: [{ text: generatePrompt(formState) }] }], generationConfig: { responseMimeType: "application/json", responseSchema: responseSchema } };
-
+// --- SAFE JSON PARSER ---
+function safeParseJSON(text) {
   try {
-    const response = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-    if (!response.ok) { 
-        const errorData = await response.json(); 
-        throw new Error(errorData.error?.message || `API request failed with status ${response.status}`); 
+    let cleaned = text.replace(/```json|```/gi, '').trim();
+
+    const start = cleaned.indexOf('{');
+    const end = cleaned.lastIndexOf('}');
+    if (start !== -1 && end !== -1) {
+      cleaned = cleaned.substring(start, end + 1);
     }
-    const data = await response.json();
-    const text = data.candidates[0].content.parts[0].text;
-    return JSON.parse(text);
-  } catch (error) {
-    console.error("Error fetching travel suggestions:", error);
-    throw new Error("Failed to get suggestions. Check your API Key, destination, or try again later.");
+
+    return JSON.parse(cleaned);
+  } catch (err) {
+    console.error("JSON Parse Failed:", err, text);
+    return null;
   }
 }
 
-// --- INITIAL RENDER ---
-document.addEventListener('DOMContentLoaded', render);
+// --- DEFAULT FALLBACK ---
+function getDefaultResponse() {
+  return {
+    destinationInfo: {
+      about: "No data available",
+      history: "No data available",
+      localSpecialty: "No data available"
+    },
+    isGoodTimeToVisit: false,
+    reasoning: "Could not generate suggestions. Please try again.",
+    bestTimeToVisit: "",
+    dayByDayPlan: [],
+    placesToVisit: [],
+    foodToTry: [],
+    accommodationSuggestions: []
+  };
+}
+
+// --- GEMINI API FUNCTION ---
+async function getTravelSuggestions(formState) {
+  const apiKey = "AIzaSyCX6EW4CrC-9vqcySuJ7h3-SUKIyIDuAVk"; // 🔑 put your NEW key
+
+  const API_URL =
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+
+  const payload = {
+    contents: [
+      {
+        parts: [
+          {
+            text:
+              generatePrompt(formState) +
+              "\nReturn ONLY valid JSON. No markdown, no explanation."
+          }
+        ]
+      }
+    ],
+    generationConfig: {
+      temperature: 0.7
+    }
+  };
+
+  try {
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("API Error:", errorData);
+      return getDefaultResponse();
+    }
+
+    const data = await response.json();
+
+    const text =
+      data?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!text) {
+      console.error("Empty API response:", data);
+      return getDefaultResponse();
+    }
+
+    const parsed = safeParseJSON(text);
+
+    if (!parsed) {
+      return getDefaultResponse();
+    }
+
+    return parsed;
+
+  } catch (error) {
+    console.error("Fetch Error:", error);
+    return getDefaultResponse();
+  }
+}
 
