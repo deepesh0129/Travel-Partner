@@ -407,24 +407,10 @@ function handleTabClick(e) {
 
 // --- API SERVICE LOGIC ---
 async function getTravelSuggestions(formState) {
-  const apiKey = "AIzaSyCX6EW4CrC-9vqcySuJ7h3-SUKIyIDuAVk";
+  const apiKey = "AIzaSyCKamnOoDRnxuDLZlqyUf_F5O1ebJ6uB-Q";
 
   const API_URL =
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-
-  const payload = {
-    contents: [
-      {
-        parts: [
-          {
-            text:
-              generatePrompt(formState) +
-              "\nReturn ONLY valid JSON. No markdown, no explanation."
-          }
-        ]
-      }
-    ]
-  };
 
   try {
     const response = await fetch(API_URL, {
@@ -432,23 +418,33 @@ async function getTravelSuggestions(formState) {
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [
+              {
+                text:
+                  generatePrompt(formState) +
+                  "\nReturn ONLY valid JSON. No markdown."
+              }
+            ]
+          }
+        ]
+      })
     });
 
     const data = await response.json();
-
-    // 🔍 Debug (check console if issue)
-    console.log("API RESPONSE:", data);
+    console.log("API RESPONSE:", data); // 🔥 IMPORTANT
 
     let text =
-      data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      data?.candidates?.[0]?.content?.parts?.[0]?.text;
 
-    if (!text) throw new Error("Empty response");
+    if (!text) throw new Error("No text returned");
 
-    // ✅ Clean response
+    // clean markdown
     text = text.replace(/```json|```/gi, "").trim();
 
-    // ✅ Extract JSON safely
+    // extract JSON safely
     const start = text.indexOf("{");
     const end = text.lastIndexOf("}");
 
@@ -456,22 +452,28 @@ async function getTravelSuggestions(formState) {
       throw new Error("Invalid JSON format");
     }
 
-    const cleanJSON = text.substring(start, end + 1);
+    const parsed = JSON.parse(text.substring(start, end + 1));
 
-    return JSON.parse(cleanJSON);
-
-  } catch (error) {
-    console.error("API ERROR:", error);
-
-    // ✅ Always return safe fallback (prevents blank screen)
+    // ✅ ensure structure (prevents UI crash)
     return {
-      destinationInfo: {
-        about: "Unable to load data",
-        history: "",
-        localSpecialty: ""
-      },
+      destinationInfo: parsed.destinationInfo || {},
+      isGoodTimeToVisit: parsed.isGoodTimeToVisit ?? false,
+      reasoning: parsed.reasoning || "No data",
+      bestTimeToVisit: parsed.bestTimeToVisit || "",
+      dayByDayPlan: parsed.dayByDayPlan || [],
+      placesToVisit: parsed.placesToVisit || [],
+      foodToTry: parsed.foodToTry || [],
+      accommodationSuggestions: parsed.accommodationSuggestions || []
+    };
+
+  } catch (err) {
+    console.error("FINAL ERROR:", err);
+
+    // ✅ NEVER break UI
+    return {
+      destinationInfo: {},
       isGoodTimeToVisit: false,
-      reasoning: "Something went wrong. Try again.",
+      reasoning: "Failed to load suggestions",
       bestTimeToVisit: "",
       dayByDayPlan: [],
       placesToVisit: [],
