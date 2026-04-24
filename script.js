@@ -411,12 +411,12 @@ function generatePrompt(formState) { return `You are an expert travel consultant
 
 async function getTravelSuggestions(formState) {
   // IMPORTANT: PASTE YOUR GOOGLE AI STUDIO API KEY IN THE LINE BELOW
-  const apiKey = "AIzaSyAZ5LCBVtDZmWp_WQadiXC3pJX4INviimg";
+  const apiKey = "AIzaSyCX6EW4CrC-9vqcySuJ7h3-SUKIyIDuAVk";
 
   if (apiKey === "YOUR_API_KEY_HERE" || !apiKey) {
     throw new Error("API Key not found. Please edit script.js and add your key.");
   }
-  const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+  const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
   const payload = { contents: [{ parts: [{ text: generatePrompt(formState) }] }], generationConfig: { responseMimeType: "application/json", responseSchema: responseSchema } };
 
   try {
